@@ -1,6 +1,7 @@
 const cookieParser = require("cookie-parser");
 const express = require("express");
 const userRoutes = require("./Routes/userRoute");
+const postRoutes = require("./Routes/postRoutes");
 const app = express();
 
 //Regular middlewares
@@ -10,5 +11,6 @@ app.use(cookieParser());
 
 //Importing routes
 app.use("/blog/user", userRoutes);
+app.use("/blog", postRoutes);
 
 module.exports = app;
