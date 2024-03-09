@@ -12,17 +12,23 @@ const cloudinaryFileUpload = async (localFilePath) => {
     if (!localFilePath) return null;
 
     //else upload the file!!
-    const uplaodedFile = await cloudinary.uploader.upload(localFilePath, {
+    // console.log(
+    //   process.env.CLOUDINARY_NAME,
+    //   process.env.CLOUDINARY_API_KEY,
+    //   process.env.CLOUDINARY_API_SECRET
+    // );
+    const uploadedFile = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "image", //CoverImage matra lina lako vayera image lai matra handle gareko!!
     });
 
-    console.log(`File uploaded successfully: ${uplaodedFile.url}`);
+    console.log(`File uploaded successfully: ${uploadedFile.url}`);
     //file uplaoded successfully
     //remove file from local server:
     fs.unlinkSync(localFilePath);
 
-    return uplaodedFile;
+    return uploadedFile;
   } catch (error) {
+    console.log(error.message);
     fs.unlinkSync(localFilePath);
     return null;
   }

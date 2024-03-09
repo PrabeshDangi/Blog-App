@@ -85,7 +85,7 @@ const logInUser = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("Invalid password!!");
   }
-  console.log(userAvailable);
+  //console.log(userAvailable);
   //yedi sabai credentials haru correct chha vane, token pathaune client lai.
   sendtoken(userAvailable, 200, res);
 });

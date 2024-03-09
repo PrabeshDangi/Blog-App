@@ -1,7 +1,11 @@
 const prisma = require("../prisma/index");
 const asyncHandler = require("express-async-handler");
 const slugify = require("slugify");
-const { cloudinaryFileUpload } = require("../utils/cloudinaryFileUpload");
+const {
+  cloudinaryFileUpload,
+  cloudinaryFileDelete,
+} = require("../utils/cloudinaryFileUpload");
+const verifyJWT = require("../Middlewares/authentication.Middleware");
 
 //extract publicId of Asset stored on cloudinary so that it can be overwritten
 function extractPublicId(cloudinaryUrl) {
@@ -61,45 +65,44 @@ const createBlog = asyncHandler(async (req, res) => {
   }
 
   const slug = slugify(title, { lower: true });
+  console.log(req.file);
 
   //Yedi request ma file aako chha ra tesma coverImage naam vayeko array chha vane tyo array ko first index ma vako file ko path line
-  //const coverImageLocalPath = req.file?.coverImage?.path;
+  const coverImageLocalPath = req.file?.path;
+  console.log(req.file);
   // let coverImageLocalPath;
   // if (
   //   req.file &&
-  //   Array.isArray(req.file.coverImage) &&
-  //   req.file.coverImage.length > 0
+  //   Array.isArray(req.file) &&
+  //   req.file.length > 0
   // ) {
-  //   coverImageLocalPath = req.file.coverImage[0].path;
+  //   coverImageLocalPath = req.file?.path;
   // }
 
-  // if (!coverImageLocalPath) {
-  //   res.status(400);
-  //   throw new Error("Cover-Image not available!!");
-  // }
-
-  // Check if cover image is available in the request
-  if (!req.file || !req.file.coverImage) {
+  if (!coverImageLocalPath) {
     res.status(400);
-    throw new Error("Cover-Image not available!!");
+    throw new Error("Cover Image not available!!");
   }
 
-  // Get the local path of the uploaded cover image
-  const coverImageLocalPath = req.file.coverImage[0].path;
-
   const coverImage = await cloudinaryFileUpload(coverImageLocalPath);
+  //console.log(coverImage);
 
   //Just for safety, checking if coverImage is uplaoded or not
   if (!coverImage.url) {
-    res.status(400);
+    return res.status(400);
     throw new Error("Cover-Image uploading failed!!");
   }
 
   const createdPost = await prisma.post.create({
-    title,
-    body,
-    slug: slug,
-    coverImage: coverImage.url,
+    data: {
+      title,
+      body,
+      slug: slug,
+      coverImage: coverImage.url,
+      author: {
+        connect: { id: req.user.id }, // Connect the post to the author user
+      },
+    },
   });
 
   return res.status(200).json({
@@ -108,7 +111,109 @@ const createBlog = asyncHandler(async (req, res) => {
   });
 });
 
+const updateBlog = asyncHandler(async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const { title, body } = req.body;
+
+    // Use Prisma to fetch the original post data from the database
+    // console.log(postId);
+
+    const originalPost = await prisma.post.findUnique({
+      where: { id: postId },
+      //select: { authorId: true }, // Select the author ID of the post
+    });
+
+    if (!originalPost) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    // Check if the authenticated user is the author of the post
+    if (originalPost.authorId !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized access: You are not the author of this post",
+      });
+    }
+
+    // Update only the specified fields of the post
+    const updatedPost = await prisma.post.update({
+      where: { id: postId },
+      data: { title, body },
+    });
+
+    // Return the updated post as a response
+    res.status(200).json({
+      success: true,
+      message: "Post updated successfully",
+      post: updatedPost,
+    });
+  } catch (error) {
+    console.error("Error updating post:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update post",
+    });
+  }
+});
+
+const updateCoverImage = asyncHandler(async (req, res) => {
+  const { postId } = req.params;
+  const newcoverImage = req.file?.path;
+
+  try {
+    const originalPost = await prisma.post.findUnique({
+      where: { id: Number(postId) },
+      select: { authorId: true },
+    });
+
+    if (!originalPost) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    if (originalPost.authorId != req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized access: You are not the author of this post",
+      });
+    }
+    //retrieve old image url as:
+    const oldImageUrl = originalPost.coverImage;
+
+    //extract public_id as:
+    const public_id = await extractPublicId(oldImageUrl);
+
+    const newImageUrl = await cloudinaryFileUpload(newcoverImage);
+
+    const updatedBlog = await prisma.post.update({
+      where: { id: Number(postId) },
+      data: { newImageUrl },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "CoverImage updated successfully",
+      post: updatedBlog,
+    });
+    await cloudinaryFileDelete(public_id);
+  } catch (error) {
+    console.error("Error updating post:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update post",
+    });
+  }
+});
+
 module.exports = {
   getAllBlogs,
   createBlog,
+  updateBlog,
+  updateCoverImage,
 };
