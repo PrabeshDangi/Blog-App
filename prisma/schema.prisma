@@ -14,19 +14,35 @@ datasource db {
 }
 
 model User {
-  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  id       String    @id @default(auto()) @map("_id") @db.ObjectId
   name     String?
-  email    String  @unique
+  email    String    @unique
   password String
   posts    Post[]
+  comments Comment[]
 }
 
 model Post {
-  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
   slug       String
   title      String
   body       String
   coverImage String
-  author     User   @relation(fields: [authorId], references: [id])
-  authorId   String @db.ObjectId // relation scalar field  (used in the `@relation` attribute above)
+  author     User      @relation(fields: [authorId], references: [id])
+  authorId   String    @db.ObjectId // relation scalar field  (used in the `@relation` attribute above)
+  comments   Comment[]
+}
+
+// Define the Comment model
+model Comment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // Define a relation to the user who created the comment
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String   @db.ObjectId // Foreign key to the user who created the comment
+  // Define a relation to the post the comment is associated with
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    String   @db.ObjectId // Foreign key to the post the comment is associated with
 }

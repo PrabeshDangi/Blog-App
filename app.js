@@ -2,6 +2,7 @@ const cookieParser = require("cookie-parser");
 const express = require("express");
 const userRoutes = require("./Routes/userRoute");
 const postRoutes = require("./Routes/postRoutes");
+const commentRoutes = require("./Routes/commentRoutes");
 const upload = require("./Middlewares/multer");
 const app = express();
 
@@ -15,5 +16,6 @@ app.use(cookieParser());
 //Importing routes
 app.use("/blog/user", userRoutes);
 app.use("/blog", postRoutes);
+app.use("/comment", commentRoutes);
 
 module.exports = app;

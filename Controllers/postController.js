@@ -211,9 +211,34 @@ const updateCoverImage = asyncHandler(async (req, res) => {
   }
 });
 
+const deleteBlog = asyncHandler(async (req, res) => {
+  const { postId } = req.params;
+
+  const postToDelete = await prisma.post.findUnique({
+    where: { id: postId },
+  });
+
+  if (!postToDelete) {
+    res.status(404);
+    throw new Error("Post not found!!");
+  }
+
+  await prisma.post.delete({
+    where: {
+      id: postId,
+    },
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Post deleted successfully!!",
+  });
+});
+
 module.exports = {
   getAllBlogs,
   createBlog,
   updateBlog,
   updateCoverImage,
+  deleteBlog,
 };
