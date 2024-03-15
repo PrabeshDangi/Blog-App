@@ -264,6 +264,7 @@ const deleteBlog = asyncHandler(async (req, res) => {
 
 module.exports = {
   getAllBlogs,
+  getBlogsById,
   createBlog,
   updateBlog,
   updateCoverImage,

@@ -6,12 +6,14 @@ const {
   updateBlog,
   updateCoverImage,
   deleteBlog,
+  getBlogsById,
 } = require("../Controllers/postController");
 
 const verifyJWT = require("../Middlewares/authentication.Middleware");
 const router = Router();
 
 router.route("/getblogs").get(getAllBlogs);
+router.route("/getblogs/:id").get(getBlogsById);
 //Protected routes
 router
   .route("/createblog")
