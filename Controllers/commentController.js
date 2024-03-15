@@ -1,6 +1,51 @@
 const prisma = require("../prisma/index");
 //const asyncHandler=require("express-async-handler")
 
+const getAllComments = async (req, res) => {
+  try {
+    const postId = req.params.id;
+    //console.log(postId);
+    const postAvailable = await prisma.post.findUnique({
+      where: { id: postId },
+    });
+
+    if (!postAvailable) {
+      return res.status(404).json({
+        error: "Post not available!!",
+      });
+    }
+
+    const allComments = await prisma.comment.findMany({
+      where: {
+        postId: postId,
+      },
+      select: {
+        content: true,
+        updatedAt: true,
+        authorId: true,
+      },
+    });
+    const totalComments = allComments.length;
+
+    if (!allComments || allComments.length === 0) {
+      return res.status(404).json({
+        Message: "No comments for this post available!!",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Comment fetched successfully!!",
+      comments: allComments,
+      totalNumberOfComments: totalComments,
+    });
+  } catch (error) {
+    console.log("Error fetching the comments!!:", error.message);
+    return res.status(500).json({
+      error: error.message,
+    });
+  }
+};
+
 const createComment = async (req, res) => {
   try {
     const { content } = req.body;
@@ -41,50 +86,52 @@ const createComment = async (req, res) => {
   }
 };
 
-const getAllComments = async (req, res) => {
-  try {
-    const postId = req.params.id;
-    //console.log(postId);
-    const postAvailable = await prisma.post.findUnique({
-      where: { id: postId },
-    });
+const updateComment = async (req, res) => {
+  const { content } = req.body;
+  const commentId = req.params.id;
 
-    if (!postAvailable) {
-      return res.status(404).json({
-        error: "Post not available!!",
-      });
-    }
-
-    const allComments = await prisma.comment.findMany({
-      where: {
-        postId: postId,
-      },
-      select: {
-        content: true,
-        updatedAt: true,
-        authorId: true,
-      },
-    });
-
-    if (!allComments || allComments.length === 0) {
-      return res.status(404).json({
-        Message: "No comments for this post available!!",
-      });
-    }
-
-    return res.status(200).json({
-      message: "Comment fetched successfully!!",
-      comments: allComments,
-    });
-  } catch (error) {
-    console.log("Error fetching the comments!!:", error.message);
-    return res.status(500).json({
-      error: error.message,
+  if (!content) {
+    return res.status(400).json({
+      error: "Comment content unavailable!!",
     });
   }
+
+  if (!commentId) {
+    return res.status(404).json({
+      error: "Comment Unavailable!!",
+    });
+  }
+
+  const updatedComment = await prisma.comment.update({
+    where: { id: commentId },
+    data: { content },
+  });
+
+  return res.status(200).json({
+    message: "Comment updated successfully!!",
+    comment: content,
+  });
+};
+
+const deleteComment = async (req, res) => {
+  const commentId = req.params.id;
+  if (!commentId) {
+    return res.status(404).json({
+      error: "Comment not found!!",
+    });
+  }
+  await prisma.comment.delete({
+    where: { id: commentId },
+  });
+
+  return res.status(200).json({
+    message: "Comment deleted successfully!!",
+  });
 };
 
 module.exports = {
-  createComment,
   getAllComments,
+  createComment,
+  updateComment,
+  deleteComment,
 };
