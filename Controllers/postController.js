@@ -55,6 +55,33 @@ const getAllBlogs = asyncHandler(async (req, res) => {
   }
 });
 
+//get Blogs of specific user
+
+const getBlogsById = asyncHandler(async (req, res) => {
+  const { userId } = req.params.id;
+
+  if (!userId) {
+    res.status(400);
+    throw new Error("User not available.");
+  }
+
+  const allBlogs = await prisma.post.findMany({
+    where: {
+      authorId: userId,
+    },
+  });
+
+  if (!allBlogs || allBlogs.length == 0) {
+    res.status(404);
+    throw new Error("No blogs found for this user!!");
+  }
+
+  return res.status(200).json({
+    Message: "Blogs fetched successfully!!",
+    Blogs: allBlogs,
+  });
+});
+
 //Creating the blog post
 const createBlog = asyncHandler(async (req, res) => {
   const { title, body } = req.body;
